@@ -10,7 +10,7 @@ import { findMatchesAction } from '../../app/actions/matching';
 import { bloodRequestSchema } from '../../lib/validation/schemas';
 import { CheckCircle2, AlertCircle, ShieldCheck, Search } from 'lucide-react';
 import { MatchResults } from '../matching/MatchResults';
-import { MatchEvaluationResult } from '../../lib/matching/matchingEngine';
+import type { MatchEvaluationResult } from '../../lib/types';
 
 interface FormState {
   requester_name: string;

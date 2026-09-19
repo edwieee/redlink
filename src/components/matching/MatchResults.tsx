@@ -1,5 +1,5 @@
 import React from 'react';
-import { MatchEvaluationResult } from '../../lib/matching/matchingEngine';
+import type { MatchEvaluationResult } from '../../lib/types';
 import { ShieldCheck, UserCircle, Droplet, MapPin, XCircle, CheckCircle2 } from 'lucide-react';
 
 interface MatchResultsProps {

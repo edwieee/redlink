@@ -1,6 +1,7 @@
 'use server';
 
-import { findMatchesForRequest, MatchingEngineResult } from '../../lib/matching/matchingEngine';
+import { findMatchesForRequest } from '../../lib/matching/matchingEngine';
+import type { MatchingEngineResult } from '../../lib/types';
 
 /**
  * Server Action to trigger the matching engine for a specific request.

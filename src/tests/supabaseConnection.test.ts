@@ -17,8 +17,12 @@ import { describe, it, expect } from 'vitest';
 const hasEnvVars =
   typeof process.env.NEXT_PUBLIC_SUPABASE_URL === 'string' &&
   process.env.NEXT_PUBLIC_SUPABASE_URL.length > 0 &&
-  typeof process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY === 'string' &&
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.length > 0;
+  (
+    (typeof process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY === 'string' &&
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.length > 0) ||
+    (typeof process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === 'string' &&
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 0)
+  );
 
 describe('Supabase Connection', () => {
   it('should export a createClient-compatible module from supabase.ts', async () => {

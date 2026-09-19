@@ -1,18 +1,37 @@
 import 'server-only';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+let _supabaseServer: SupabaseClient | null = null;
 
-if (!supabaseUrl) {
-  throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable.');
-}
+export function getSupabaseServer(): SupabaseClient {
+  if (_supabaseServer) {
+    return _supabaseServer;
+  }
 
-if (!supabaseServiceRoleKey) {
-  throw new Error(
-    'Missing SUPABASE_SERVICE_ROLE_KEY environment variable. ' +
-    'This is required for server-side matching operations that bypass RLS.'
-  );
+  const supabaseUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+  const supabaseServiceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+
+  if (!supabaseUrl) {
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable.');
+  }
+
+  if (!supabaseServiceRoleKey) {
+    throw new Error(
+      'Missing SUPABASE_SERVICE_ROLE_KEY environment variable. ' +
+      'This is required for server-side matching operations that bypass RLS.'
+    );
+  }
+
+  _supabaseServer = createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+
+  return _supabaseServer;
 }
 
 /**
@@ -22,4 +41,10 @@ if (!supabaseServiceRoleKey) {
  * This is STRICTLY for internal matching engine operations and MUST NOT
  * be used in ways that expose private data to unauthorized users.
  */
-export const supabaseServer = createClient(supabaseUrl, supabaseServiceRoleKey);
+export const supabaseServer = new Proxy({} as SupabaseClient, {
+  get(_target, prop, receiver) {
+    const client = getSupabaseServer();
+    const value = Reflect.get(client, prop, receiver);
+    return typeof value === 'function' ? value.bind(client) : value;
+  },
+});

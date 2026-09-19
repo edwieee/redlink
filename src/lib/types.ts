@@ -87,3 +87,18 @@ export interface RequestWithMatches {
     donor: SanitizedDonor;
   }>;
 }
+
+export interface MatchEvaluationResult {
+  donorName: string;
+  bloodGroup: string;
+  locality: string;
+  isEligible: boolean;
+  exclusionReason?: string;
+  matchId?: string; // Created match ID if eligible
+}
+
+export interface MatchingEngineResult {
+  success: boolean;
+  message?: string;
+  results: MatchEvaluationResult[];
+}

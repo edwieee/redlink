@@ -4,21 +4,9 @@ import { isBloodCompatible } from './bloodCompatibility';
 import { isLocationMatch } from './location';
 import { checkDonationEligibility } from './interval';
 import { DbDonor, DbRequest } from '../database.types';
+import type { MatchEvaluationResult, MatchingEngineResult } from '../types';
 
-export interface MatchEvaluationResult {
-  donorName: string;
-  bloodGroup: string;
-  locality: string;
-  isEligible: boolean;
-  exclusionReason?: string;
-  matchId?: string; // Created match ID if eligible
-}
-
-export interface MatchingEngineResult {
-  success: boolean;
-  message?: string;
-  results: MatchEvaluationResult[];
-}
+export type { MatchEvaluationResult, MatchingEngineResult };
 
 /**
  * Core Matching Engine Orchestrator

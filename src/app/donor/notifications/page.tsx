@@ -4,6 +4,8 @@ import { Button } from '../../../components/ui/Button';
 import { Droplet, MapPin, AlertCircle, Bell, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Donor Notifications (Demo) — REDLINK',
   description: 'Prototype view of donor notifications.',
