@@ -1,6 +1,6 @@
 'use server';
 
-import { supabase } from '../../lib/supabase';
+import { supabaseServer } from '../../lib/supabaseServer';
 import { bloodRequestSchema } from '../../lib/validation/schemas';
 
 export interface ActionResponse {
@@ -8,6 +8,7 @@ export interface ActionResponse {
   message?: string;
   error?: string;
   fieldErrors?: Record<string, string>;
+  request_id?: string;
 }
 
 /**
@@ -16,7 +17,7 @@ export interface ActionResponse {
  * Enforces:
  * 1. Server-side validation & normalization via bloodRequestSchema
  * 2. Supabase insert into `requests` table with status: 'pending'
- * 3. No `.select()` call (complies with RLS insert-only anon policy)
+ * 3. Uses server-client to bypass RLS and retrieve the inserted ID securely
  * 4. Zero matching logic execution (Step 4 only records the request)
  * 5. Zero exposure of phone numbers or internal error messages
  */
@@ -50,9 +51,9 @@ export async function submitBloodRequestAction(data: unknown): Promise<ActionRes
   } = parseResult.data;
 
   try {
-    // 2. Supabase INSERT without SELECT (RLS anon insert policy)
-    // Request status explicitly set to 'pending'. No matching engine triggered.
-    const { error } = await supabase.from('requests').insert([
+    // 2. Supabase INSERT with SELECT using the server role key
+    // This allows us to securely get the new request ID without relaxing public RLS.
+    const { data, error } = await supabaseServer.from('requests').insert([
       {
         requester_name,
         blood_group,
@@ -63,9 +64,9 @@ export async function submitBloodRequestAction(data: unknown): Promise<ActionRes
         phone,
         status: 'pending',
       },
-    ]);
+    ]).select('id').single();
 
-    if (error) {
+    if (error || !data) {
       // Safe logging without exposing phone numbers or user data
       console.error(
         '[BloodRequest] Database insert error code:',
@@ -80,6 +81,7 @@ export async function submitBloodRequestAction(data: unknown): Promise<ActionRes
     return {
       success: true,
       message: 'Your blood request has been recorded.',
+      request_id: data.id,
     };
   } catch (err) {
     console.error('[BloodRequest] Unexpected submission failure');

@@ -1,7 +1,10 @@
 import { BloodGroup, UrgencyLevel } from './types';
 
-// Configurable donation interval policy (in days) - Single source of truth
-export const DONATION_INTERVAL_DAYS = 90;
+// REDLINK prototype rule: a donor must be at least 120 days from their
+// previous whole-blood donation to be considered eligible.
+// ANAVANDI SC-12 requires donation interval rules but does not mandate
+// a specific number; 120 days is the chosen prototype value.
+export const DONATION_INTERVAL_DAYS = 120;
 
 export const BLOOD_GROUPS: readonly BloodGroup[] = [
   'A+',

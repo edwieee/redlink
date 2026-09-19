@@ -6,8 +6,11 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { BLOOD_GROUPS } from '../../lib/constants';
 import { submitBloodRequestAction } from '../../app/actions/requests';
+import { findMatchesAction } from '../../app/actions/matching';
 import { bloodRequestSchema } from '../../lib/validation/schemas';
-import { CheckCircle2, AlertCircle, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, AlertCircle, ShieldCheck, Search } from 'lucide-react';
+import { MatchResults } from '../matching/MatchResults';
+import { MatchEvaluationResult } from '../../lib/matching/matchingEngine';
 
 interface FormState {
   requester_name: string;
@@ -40,6 +43,11 @@ export const BloodRequestForm: React.FC = () => {
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  
+  // Matching Engine State
+  const [requestId, setRequestId] = useState<string | null>(null);
+  const [isMatching, setIsMatching] = useState(false);
+  const [matchResults, setMatchResults] = useState<MatchEvaluationResult[] | null>(null);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -85,11 +93,28 @@ export const BloodRequestForm: React.FC = () => {
           setFieldErrors(response.fieldErrors);
         }
         setGlobalError(
-          response.error || 'Something went wrong while submitting. Please try again.'
+          response.error || response.message || 'Validation failed. Please check the form fields.'
         );
       } else {
         setIsSuccess(true);
-        setFormData(initialFormState);
+        if (response.request_id) {
+          setRequestId(response.request_id);
+          
+          // Automatically trigger the matching engine
+          setIsMatching(true);
+          try {
+            const matchResponse = await findMatchesAction(response.request_id);
+            if (matchResponse.success) {
+              setMatchResults(matchResponse.results);
+            } else {
+              setGlobalError(matchResponse.message || 'Failed to find matches.');
+            }
+          } catch {
+            setGlobalError('Something went wrong while finding matches.');
+          } finally {
+            setIsMatching(false);
+          }
+        }
       }
     } catch {
       setGlobalError('Something went wrong while submitting. Please try again.');
@@ -103,42 +128,49 @@ export const BloodRequestForm: React.FC = () => {
     setFormData(initialFormState);
     setFieldErrors({});
     setGlobalError(null);
+    setRequestId(null);
+    setMatchResults(null);
   };
+
 
   if (isSuccess) {
     return (
-      <div className="rounded-xl border border-white/[0.08] bg-[#07070a] p-8 sm:p-10 text-center space-y-6 max-w-xl mx-auto">
-        <div className="w-12 h-12 rounded-full bg-[#df2531]/10 border border-[#df2531]/30 flex items-center justify-center text-[#df2531] mx-auto">
-          <CheckCircle2 className="w-6 h-6" />
+      <div className="bg-[#111111] border border-white/[0.08] p-8 rounded-xl space-y-6 text-center max-w-lg mx-auto">
+        <div className="flex justify-center">
+          {isMatching ? (
+            <div className="w-16 h-16 rounded-full bg-white/[0.04] flex items-center justify-center animate-pulse">
+              <Search className="w-8 h-8 text-white/40" />
+            </div>
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-[#df2531]/10 flex items-center justify-center">
+              <CheckCircle2 className="w-8 h-8 text-[#df2531]" />
+            </div>
+          )}
         </div>
-
-        <div className="space-y-2">
-          <span className="text-[10px] font-mono tracking-widest text-[#df2531] uppercase">
-            REQUEST SUBMITTED
-          </span>
-          <h2 className="font-display font-bold text-2xl text-white">
-            Blood Request Recorded
-          </h2>
-          <p className="text-sm text-white/70 font-normal leading-relaxed">
-            Your blood request has been recorded.
-          </p>
-        </div>
-
-        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 text-xs text-white/70 space-y-1.5 text-left font-sans">
-          <div className="flex items-center gap-2 text-white font-medium mb-1">
-            <ShieldCheck className="w-4 h-4 text-[#df2531]" />
-            Request Status: Pending
+        
+        {isMatching ? (
+          <div className="space-y-2">
+            <h3 className="font-display font-bold text-2xl text-white">MATCHING DONORS...</h3>
+            <p className="text-white/60">Searching for eligible donors nearby.</p>
           </div>
-          <div>• Request safely recorded in the system.</div>
-          <div>• Contact information remains strictly confidential and protected.</div>
-          <div>• Direct matching: phone numbers are never broadcast to public lists.</div>
-        </div>
+        ) : matchResults ? (
+          <div className="w-full text-left">
+            <MatchResults results={matchResults} />
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <h3 className="font-display font-bold text-2xl text-white">Request Recorded</h3>
+            <p className="text-white/60">An error occurred while finding matches.</p>
+          </div>
+        )}
 
-        <div className="pt-2">
-          <Button variant="secondary" size="md" onClick={handleReset} fullWidth>
-            Submit Another Request
-          </Button>
-        </div>
+        {(!isMatching && (!matchResults || matchResults.length === 0)) && (
+          <div className="pt-6">
+            <Button variant="secondary" size="md" onClick={handleReset} fullWidth>
+              Submit Another Request
+            </Button>
+          </div>
+        )}
       </div>
     );
   }

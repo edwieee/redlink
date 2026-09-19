@@ -42,7 +42,7 @@ export const Hero: React.FC = () => {
 
           {/* Right Side — Hero Image */}
           <div className="relative flex items-center justify-center order-2 w-full h-[340px] sm:h-[440px] lg:h-[560px]">
-            <div className="relative w-full h-full lg:scale-[1.49]">
+            <div className="relative w-full h-full lg:scale-[1.49] lg:-translate-x-6">
               <Image
                 src="/hero-image.png"
                 alt="Redlink connectivity visualization"

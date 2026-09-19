@@ -1,13 +1,30 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// Mock server-only to allow tests to run in Node
+vi.mock('server-only', () => ({}));
+
 // Mock the Supabase client for unit testing actions without requiring live network/env
-const mockInsert = vi.fn().mockResolvedValue({ error: null, data: null, status: 201 });
-const mockFrom = vi.fn().mockReturnValue({
-  insert: mockInsert,
+const mockInsert = vi.fn().mockReturnValue({
+  select: vi.fn().mockReturnValue({
+    single: vi.fn().mockResolvedValue({ error: null, data: { id: 'req-123' }, status: 201 })
+  })
+});
+
+// Mock for simple inserts that don't chain select
+const mockSimpleInsert = vi.fn().mockResolvedValue({ error: null, data: null, status: 201 });
+
+const mockFrom = vi.fn().mockImplementation((table: string) => {
+  return { insert: mockInsert };
 });
 
 vi.mock('../lib/supabase', () => ({
   supabase: {
+    from: (...args: unknown[]) => mockFrom(...args),
+  },
+}));
+
+vi.mock('../lib/supabaseServer', () => ({
+  supabaseServer: {
     from: (...args: unknown[]) => mockFrom(...args),
   },
 }));
