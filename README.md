@@ -56,10 +56,6 @@ Matching considers:
 
 Matches blood requests with compatible donor blood groups using defined compatibility rules.
 
-### Location Matching
-
-The current prototype matches donors using locality and pincode.
-
 ### Donation Eligibility
 
 The prototype uses a 120-day donation interval rule to determine basic donor eligibility.
