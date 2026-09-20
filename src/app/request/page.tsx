@@ -11,7 +11,13 @@ export const metadata = {
     'Submit an urgent blood request on REDLINK. Directly matches with eligible nearby donors without broadcasting to social media.',
 };
 
-export default function RequestPage() {
+export default async function RequestPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ requestId?: string; token?: string }>;
+}) {
+  const resolvedParams = searchParams ? await searchParams : undefined;
+
   return (
     <div className="min-h-screen bg-[#030304] text-white flex flex-col justify-between">
       <Navbar />
@@ -28,7 +34,10 @@ export default function RequestPage() {
         </div>
 
         <div className="w-full max-w-xl">
-          <BloodRequestForm />
+          <BloodRequestForm
+            initialRequestId={resolvedParams?.requestId}
+            initialToken={resolvedParams?.token}
+          />
         </div>
       </main>
 

@@ -1,7 +1,8 @@
 import React from 'react';
 import { getDonorNotificationsAction } from '../../actions/notifications';
+import { AcceptRequestButton } from '../../../components/donor/AcceptRequestButton';
 import { Button } from '../../../components/ui/Button';
-import { Droplet, MapPin, AlertCircle, Bell, ArrowRight } from 'lucide-react';
+import { Droplet, MapPin, AlertCircle, Bell, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
@@ -80,57 +81,73 @@ export default async function DonorNotificationsPage({
           </div>
         ) : (
           <div className="space-y-4">
-            {notifications.map((notification) => (
-              <div 
-                key={notification.matchId}
-                className="rounded-xl border border-[#df2531]/30 bg-[#111111] p-6 relative overflow-hidden"
-              >
-                {/* Accent line */}
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#df2531]"></div>
-                
-                <div className="flex flex-col sm:flex-row gap-6 justify-between items-start">
-                  <div className="space-y-4 pl-2">
-                    <div>
-                      <h3 className="font-mono text-sm tracking-widest text-white font-medium uppercase mb-1 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-[#df2531] animate-pulse"></span>
-                        NEW BLOOD REQUEST
-                      </h3>
-                      <p className="text-sm text-white/70">
-                        You are eligible for this request.
-                      </p>
-                    </div>
+            {notifications.map((notification) => {
+              const isAccepted = notification.matchStatus === 'accepted';
 
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-white/60">
-                      <div className="flex items-center gap-1.5">
-                        <Droplet className="w-4 h-4 text-[#df2531]" />
-                        <span className="font-medium text-white">{notification.bloodGroup}</span>
+              return (
+                <div 
+                  key={notification.matchId}
+                  className={`rounded-xl border ${
+                    isAccepted ? 'border-emerald-500/30 bg-[#0c130f]' : 'border-[#df2531]/30 bg-[#111111]'
+                  } p-6 relative overflow-hidden`}
+                >
+                  {/* Accent line */}
+                  <div
+                    className={`absolute left-0 top-0 bottom-0 w-1 ${
+                      isAccepted ? 'bg-emerald-500' : 'bg-[#df2531]'
+                    }`}
+                  ></div>
+                  
+                  <div className="flex flex-col sm:flex-row gap-6 justify-between items-start">
+                    <div className="space-y-4 pl-2">
+                      <div>
+                        {isAccepted ? (
+                          <h3 className="font-mono text-sm tracking-widest text-emerald-400 font-medium uppercase mb-1 flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            REQUEST ACCEPTED
+                          </h3>
+                        ) : (
+                          <h3 className="font-mono text-sm tracking-widest text-white font-medium uppercase mb-1 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-[#df2531] animate-pulse"></span>
+                            NEW BLOOD REQUEST
+                          </h3>
+                        )}
+                        <p className="text-sm text-white/70">
+                          {isAccepted
+                            ? 'The requester can now receive your contact information.'
+                            : 'You are eligible for this request.'}
+                        </p>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="w-4 h-4 text-white/40" />
-                        <span>{notification.locality}</span>
-                      </div>
-                      {notification.urgency === 'urgent' && (
-                        <div className="flex items-center gap-1.5 text-[#df2531] bg-[#df2531]/10 px-2 py-0.5 rounded">
-                          <AlertCircle className="w-3.5 h-3.5" />
-                          <span className="uppercase text-[10px] font-bold tracking-wider">Urgent</span>
+
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-white/60">
+                        <div className="flex items-center gap-1.5">
+                          <Droplet className={`w-4 h-4 ${isAccepted ? 'text-emerald-400' : 'text-[#df2531]'}`} />
+                          <span className="font-medium text-white">{notification.bloodGroup}</span>
                         </div>
-                      )}
+                        <div className="flex items-center gap-1.5">
+                          <MapPin className="w-4 h-4 text-white/40" />
+                          <span>{notification.locality}</span>
+                        </div>
+                        {notification.urgency === 'urgent' && (
+                          <div className="flex items-center gap-1.5 text-[#df2531] bg-[#df2531]/10 px-2 py-0.5 rounded">
+                            <AlertCircle className="w-3.5 h-3.5" />
+                            <span className="uppercase text-[10px] font-bold tracking-wider">Urgent</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="pl-2 sm:pl-0 pt-4 sm:pt-0 border-t border-white/[0.08] sm:border-0 w-full sm:w-auto">
-                    {/* Placeholder for Step 7 */}
-                    <Button variant="primary" disabled className="w-full sm:w-auto group">
-                      <span>Review Request</span>
-                      <ArrowRight className="w-4 h-4 ml-2 opacity-50" />
-                    </Button>
-                    <p className="text-[10px] text-white/40 text-center sm:text-right mt-2">
-                      (Acceptance enabled in Step 7)
-                    </p>
+                    <div className="pl-2 sm:pl-0 pt-4 sm:pt-0 border-t border-white/[0.08] sm:border-0 w-full sm:w-auto">
+                      <AcceptRequestButton
+                        matchId={notification.matchId}
+                        donorId={donorId}
+                        initialStatus={notification.matchStatus}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

@@ -2,6 +2,7 @@
 
 import { supabaseServer } from '../../lib/supabaseServer';
 import { bloodRequestSchema } from '../../lib/validation/schemas';
+import { createRequesterToken } from '../../lib/auth/tokens';
 
 export interface ActionResponse {
   success: boolean;
@@ -9,6 +10,7 @@ export interface ActionResponse {
   error?: string;
   fieldErrors?: Record<string, string>;
   request_id?: string;
+  token?: string;
 }
 
 /**
@@ -64,7 +66,7 @@ export async function submitBloodRequestAction(data: unknown): Promise<ActionRes
         phone,
         status: 'pending',
       },
-    ]).select('id').single();
+    ]).select('id, phone').single();
 
     if (error || !data) {
       // Safe logging without exposing phone numbers or user data
@@ -78,10 +80,13 @@ export async function submitBloodRequestAction(data: unknown): Promise<ActionRes
       };
     }
 
+    const token = createRequesterToken(data.id, data.phone || parseResult.data.phone);
+
     return {
       success: true,
       message: 'Your blood request has been recorded.',
       request_id: data.id,
+      token,
     };
   } catch (err) {
     console.error('[BloodRequest] Unexpected submission failure');

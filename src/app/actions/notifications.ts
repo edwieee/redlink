@@ -10,6 +10,8 @@ export interface DonorNotification {
   urgency: string;
   matchType: string;
   matchedAt: string;
+  matchStatus: 'pending' | 'accepted' | 'declined';
+  acceptedAt: string | null;
 }
 
 export interface NotificationsResult {
@@ -43,13 +45,15 @@ export async function getDonorNotificationsAction(donorId: string): Promise<Noti
       return { success: false, message: 'Donor not found.', notifications: [] };
     }
 
-    // 2. Fetch pending matches for this donor, including safely joined request data
+    // 2. Fetch matches for this donor, including safely joined request data
     const { data: matches, error: matchError } = await supabaseServer
       .from('matches')
       .select(`
         id,
         match_type,
+        match_status,
         matched_at,
+        accepted_at,
         request_id,
         requests (
           blood_group,
@@ -58,7 +62,6 @@ export async function getDonorNotificationsAction(donorId: string): Promise<Noti
         )
       `)
       .eq('donor_id', donorId)
-      .eq('match_status', 'pending')
       .order('matched_at', { ascending: false });
 
     if (matchError) {
@@ -66,15 +69,19 @@ export async function getDonorNotificationsAction(donorId: string): Promise<Noti
       return { success: false, message: 'Failed to fetch notifications.', notifications: [] };
     }
 
-    const notifications: DonorNotification[] = (matches || []).map((m: any) => ({
-      matchId: m.id,
-      requestId: m.request_id,
-      matchType: m.match_type,
-      matchedAt: m.matched_at,
-      bloodGroup: m.requests?.blood_group || 'Unknown',
-      locality: m.requests?.locality || 'Unknown',
-      urgency: m.requests?.urgency || 'normal',
-    }));
+    const notifications: DonorNotification[] = (matches || [])
+      .filter((m: any) => m.match_status !== 'declined')
+      .map((m: any) => ({
+        matchId: m.id,
+        requestId: m.request_id,
+        matchType: m.match_type,
+        matchedAt: m.matched_at,
+        matchStatus: m.match_status || 'pending',
+        acceptedAt: m.accepted_at || null,
+        bloodGroup: m.requests?.blood_group || 'Unknown',
+        locality: m.requests?.locality || 'Unknown',
+        urgency: m.requests?.urgency || 'normal',
+      }));
 
     return {
       success: true,

@@ -37,15 +37,24 @@ const urgencyOptions = [
   { value: 'normal', label: 'Normal — Scheduled requirement' },
 ];
 
-export const BloodRequestForm: React.FC = () => {
+interface BloodRequestFormProps {
+  initialRequestId?: string;
+  initialToken?: string;
+}
+
+export const BloodRequestForm: React.FC<BloodRequestFormProps> = ({
+  initialRequestId,
+  initialToken,
+}) => {
   const [formData, setFormData] = useState<FormState>(initialFormState);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(Boolean(initialRequestId));
   
   // Matching Engine State
-  const [requestId, setRequestId] = useState<string | null>(null);
+  const [requestId, setRequestId] = useState<string | null>(initialRequestId || null);
+  const [token, setToken] = useState<string | null>(initialToken || null);
   const [isMatching, setIsMatching] = useState(false);
   const [matchResults, setMatchResults] = useState<MatchEvaluationResult[] | null>(null);
 
@@ -99,6 +108,18 @@ export const BloodRequestForm: React.FC = () => {
         setIsSuccess(true);
         if (response.request_id) {
           setRequestId(response.request_id);
+          const authToken = response.token || null;
+          setToken(authToken);
+
+          // Update URL without reloading so state persists on refresh
+          if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            url.searchParams.set('requestId', response.request_id);
+            if (authToken) {
+              url.searchParams.set('token', authToken);
+            }
+            window.history.replaceState(null, '', url.toString());
+          }
           
           // Automatically trigger the matching engine
           setIsMatching(true);
@@ -129,9 +150,15 @@ export const BloodRequestForm: React.FC = () => {
     setFieldErrors({});
     setGlobalError(null);
     setRequestId(null);
+    setToken(null);
     setMatchResults(null);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('requestId');
+      url.searchParams.delete('token');
+      window.history.replaceState(null, '', url.toString());
+    }
   };
-
 
   if (isSuccess) {
     return (
@@ -153,22 +180,18 @@ export const BloodRequestForm: React.FC = () => {
             <h3 className="font-display font-bold text-2xl text-white">MATCHING DONORS...</h3>
             <p className="text-white/60">Searching for eligible donors nearby.</p>
           </div>
-        ) : matchResults ? (
-          <div className="w-full text-left">
-            <MatchResults results={matchResults} />
-          </div>
         ) : (
-          <div className="space-y-2">
-            <h3 className="font-display font-bold text-2xl text-white">Request Recorded</h3>
-            <p className="text-white/60">An error occurred while finding matches.</p>
-          </div>
-        )}
-
-        {(!isMatching && (!matchResults || matchResults.length === 0)) && (
-          <div className="pt-6">
-            <Button variant="secondary" size="md" onClick={handleReset} fullWidth>
-              Submit Another Request
-            </Button>
+          <div className="w-full text-left">
+            <MatchResults
+              results={matchResults || []}
+              requestId={requestId}
+              token={token}
+            />
+            <div className="pt-6">
+              <Button variant="secondary" size="md" onClick={handleReset} fullWidth>
+                Submit Another Request
+              </Button>
+            </div>
           </div>
         )}
       </div>
